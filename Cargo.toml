@@ -1,0 +1,23 @@
+[package]
+name = "haproxy-geoip2"
+version = "0.1.0"
+authors = ["Aleksandr Orlenko <zxteam@pm.me>"]
+edition = "2021"
+repository = "https://github.com/khvzak/haproxy-geoip2"
+autotests = false
+readme = "README.md"
+keywords = ["haproxy", "geoip", "maxmind"]
+license = "MIT"
+description = "HAProxy MaxMind GeoIP2 support"
+
+[workspace]
+members = [
+    "module",
+    "tests",
+]
+
+[dependencies]
+mlua = { version = "0.9", features = ["macros"] }
+haproxy-api = { version = "0.8" }
+maxminddb = { version = "0.24", features = ["unsafe-str-decode"] }
+arc-swap = "1.7"
