@@ -79,10 +79,10 @@ impl Database {
         }
     }
 
-    /// (Re)Loads database in background, returns immediately
-    pub(crate) fn spawn_reload(&'static self) {
+    /// (Re)Loads database
+    pub(crate) fn reload(&'static self) {
         let path = self.path();
-        std::thread::spawn(move || match Reader::open_readfile(&*path) {
+        match Reader::open_readfile(&*path) {
             Ok(reader) => {
                 self.db.store(Some(Arc::new(reader)));
                 self.status.store(DB_LOADED, Relaxed);
@@ -91,7 +91,16 @@ impl Database {
                 self.last_err.store(Some(Arc::new(err.to_string())));
                 self.status.store(DB_ERROR_NEW, Relaxed);
             }
-        });
+        }
+    }
+
+    /// (Re)Load database, optionally in background and returning immediately
+    pub(crate) fn spawn_reload(&'static self) {
+        if self.reload_interval() == 0 {
+            self.reload();
+        } else {
+            std::thread::spawn(move || self.reload());
+        }
     }
 
     pub(crate) fn trigger_reload(&'static self) {

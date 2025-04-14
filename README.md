@@ -24,6 +24,7 @@ geoip2.register({
         asn = "data/GeoLite2-ASN-Test.mmdb",
     },
     -- How often to reload the database files in seconds
+    -- if set to 0, the database files will only be loaded once (at startup)
     reload_interval = 86400,
 })
 ```
@@ -32,7 +33,8 @@ The module registers the following converters in HAProxy:
 ```
 global
     master-worker
-    # This option is required to enable non-blocking databases loading
+    # If reload_interval is set to a value greater than 0,
+    # this option is required to enable non-blocking databases loading
     insecure-fork-wanted
     lua-load-per-thread haproxy.lua
 
