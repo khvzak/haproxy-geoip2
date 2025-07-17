@@ -9,12 +9,12 @@ use crate::GeoValue;
 // Global maxmind ASN database shared between all workers
 pub(crate) static DB: Database = Database::new();
 
-pub(crate) fn lookup<'a>(lua: &'a Lua, ip: IpAddr, props: &[String]) -> Option<LuaValue<'a>> {
+pub(crate) fn lookup<'a>(lua: &'a Lua, ip: IpAddr, props: &[String]) -> Option<LuaValue> {
     DB.check_status(lua);
 
     let db = DB.load();
     let reader = db.as_ref()?;
-    let asn = reader.lookup::<Asn>(ip).ok()?;
+    let asn = reader.lookup::<Asn>(ip).ok().flatten()?;
     lookup_asn(&asn, props).and_then(|v| v.into_lua(lua).ok())
 }
 

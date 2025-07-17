@@ -10,12 +10,12 @@ use crate::GeoValue;
 // Global maxmind city database shared between all workers
 pub(crate) static DB: Database = Database::new();
 
-pub(crate) fn lookup<'a>(lua: &'a Lua, ip: IpAddr, props: &[String]) -> Option<LuaValue<'a>> {
+pub(crate) fn lookup<'a>(lua: &Lua, ip: IpAddr, props: &[String]) -> Option<LuaValue> {
     DB.check_status(lua);
 
     let db = DB.load();
     let reader = db.as_ref()?;
-    let city = reader.lookup::<City>(ip).ok()?;
+    let city = reader.lookup::<City>(ip).ok().flatten()?;
     lookup_city(&city, props).and_then(|v| v.into_lua(lua).ok())
 }
 
@@ -98,7 +98,7 @@ fn lookup_city<'a>(city: &'a City, props: &[String]) -> Option<GeoValue<'a>> {
             }
             _ => {}
         },
-        "subdivision" => {
+        "subdivisions" | "subdivision" => {
             if let Some(subdivisions) = city.subdivisions.as_ref() {
                 if let Some(index) = props.get(1).and_then(|s| s.parse::<usize>().ok()) {
                     if let Some(subdivision) = subdivisions.get(index) {

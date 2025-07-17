@@ -12,8 +12,8 @@ pub(crate) enum GeoValue<'a> {
     Bool(bool),
 }
 
-impl<'l> IntoLua<'l> for GeoValue<'_> {
-    fn into_lua(self, lua: &'l Lua) -> LuaResult<LuaValue<'l>> {
+impl IntoLua for GeoValue<'_> {
+    fn into_lua(self, lua: &Lua) -> LuaResult<LuaValue> {
         match self {
             GeoValue::Str(s) => s.into_lua(lua),
             GeoValue::Float(f) => f.into_lua(lua),
@@ -51,13 +51,13 @@ pub fn register(lua: &Lua, options: LuaTable) -> LuaResult<()> {
     let reload_interval: u64 = options.get("reload_interval").unwrap_or(0);
 
     // Register databases
-    if let Ok(db) = options.get::<_, LuaTable>("db") {
-        if let Ok(path) = db.get::<_, String>("city") {
+    if let Ok(db) = options.get::<LuaTable>("db") {
+        if let Ok(path) = db.get::<String>("city") {
             city::DB.configure(path.into(), reload_interval);
             register_converter(&core, &city::DB, "city", city::lookup)?;
         }
 
-        if let Ok(asn_path) = db.get::<_, String>("asn") {
+        if let Ok(asn_path) = db.get::<String>("asn") {
             asn::DB.configure(asn_path.into(), reload_interval);
             register_converter(&core, &asn::DB, "asn", asn::lookup)?;
         }
@@ -74,7 +74,7 @@ fn register_converter<F>(
     lookup: F,
 ) -> LuaResult<()>
 where
-    F: for<'a> Fn(&'a Lua, IpAddr, &[String]) -> Option<LuaValue<'a>> + Send + Copy + 'static,
+    F: Fn(&Lua, IpAddr, &[String]) -> Option<LuaValue> + Send + Copy + 'static,
 {
     // Trigger dummy lookup within a worker to load the database
     core.register_task(move |lua| {
@@ -85,7 +85,7 @@ where
     // Register reload task
     let interval = db.reload_interval();
     if interval > 0 {
-        let trigger_reload = LuaFunction::wrap(|_, ()| {
+        let trigger_reload = LuaFunction::wrap(|| {
             db.trigger_reload();
             Ok(())
         });
